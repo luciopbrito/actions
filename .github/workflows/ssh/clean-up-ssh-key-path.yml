@@ -1,0 +1,19 @@
+name: clean up ssh key path
+
+on:
+  workflow_call:
+    inputs:
+      ssh-key-path:
+        description: 'Path to the saved SSH key'
+        required: false
+        default: '/tmp/id_rsa'
+        type: string
+    
+jobs:
+  clean-up:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up SSH key
+        run: |  
+          # Clean up
+          rm ${{ inputs.ssh-key-path }}
