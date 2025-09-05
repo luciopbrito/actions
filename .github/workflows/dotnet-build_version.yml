@@ -1,4 +1,5 @@
 name: build version
+description: 'Build a version of the project with a specified .NET version and upload as artifact'
 
 on:
   workflow_call:
@@ -13,7 +14,7 @@ on:
         type: string
 
     outputs:
-      version:
+      version_built:
         description: 'Version built'
         value: ${{ inputs.version }}
 
@@ -29,9 +30,6 @@ jobs:
 
       - name: Display version .NET
         run: dotnet --version
-
-      - name: Checkout repository
-        uses: actions/checkout@v1 
 
       - name: Build publish version
         run: dotnet publish -o version-${{github.run_number}}-${{inputs.dotnet-version}}
