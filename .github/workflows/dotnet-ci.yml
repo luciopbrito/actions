@@ -1,26 +1,6 @@
 name: Continuous Integration — .NET
 
-on:
-  workflow_dispatch:
-    inputs:
-      dotnet-version: 
-        description: 'Version of .NET SDK to use'
-        required: true
-        type: string
-        default: '7.0.x'
-      version_to_build:
-        description: 'Package version to build'
-        required: true
-        type: string
-        default: '1.0.0'
-      environment:
-        description: 'Deployment environment'
-        required: true
-        type: choice
-        options:
-          - stage
-          - production
-          
+on:          
   workflow_call:
     secrets:
       SSH_HOST:
@@ -37,38 +17,40 @@ on:
         required: true
       SSH_CMD_RESTART_SERVER:
         required: true
+    inputs:
+      dotnet_version: 
+        description: 'Version of .NET SDK to use'
+        required: true
+        type: string
+      version_to_build:
+        description: 'Package version to build'
+        required: true
+        type: string
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: string
 
 jobs:
   build-version:
     uses: luciopbrito/actions/.github/workflows/dotnet-build_version.yml@v1.0.0
     with:
       version: ${{ inputs.version_to_build }}
-      dotnet-version: ${{ inputs.dotnet-version }}
-
-  download-artifact:
-    needs: build-version
-    environment: ${{ inputs.environment }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download dist artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.build-version.outputs.version_built }}
-          path: api-career_${{ github.run_number }}
-
-      - name: Display structure of downloaded files
-        run: ls -R api-career_${{ github.run_number }}
+      dotnet-version: ${{ inputs.dotnet_version }}
 
   save-ssh:
-    needs: download-artifact
+    needs: build-version
     uses: luciopbrito/actions/.github/workflows/ssh-save_key.yml@v1.0.0
     secrets: inherit
 
   deploy:
-    needs: save-ssh
+    needs: [save-ssh, build-version]
     environment: ${{ inputs.environment }}
     runs-on: ubuntu-latest
     steps:
+      - name: Save repository name as environment variable
+        run: echo "REPO_NAME=$(echo "$GITHUB_REPOSITORY" | cut -d '/' -f 2)" >> $GITHUB_ENV
+
       - name: Save last api build
         run: |
           # SSH into the remote host and check if the folder is empty
@@ -83,10 +65,19 @@ jobs:
             ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "rm -rf ${{secrets.SSH_DEST_BACKUP}}* && cp ${{secrets.SSH_DESTINATION}}* ${{secrets.SSH_DEST_BACKUP}}"
           fi
 
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-version.outputs.version_built }}
+          path: ${{env.REPO_NAME}}_${{ github.run_number }}
+
+      - name: Display structure of downloaded files
+        run: ls -R ${{env.REPO_NAME}}_${{ github.run_number }}
+
       - name: Deploy publish folder to vps
         run: |
           # deploy publish folder to vps
-          rsync -avz --delete -e "ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" api-career_${{ github.run_number }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DESTINATION }}  
+          rsync -avz --delete -e "ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" ${{env.REPO_NAME}}_${{ github.run_number }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DESTINATION }}  
           
       - name: Restart Web Server 
         run: | 
@@ -94,7 +85,7 @@ jobs:
           ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "${{ secrets.SSH_CMD_RESTART_SERVER }}"
           
   clean-up-ssh:
-    needs: [save-ssh, deploy]
+    needs: [deploy, save-ssh]
     uses: luciopbrito/actions/.github/workflows/ssh-clean_up.yml@v1.0.0
     with:
       ssh-key-path: ${{ needs.save-ssh.outputs.ssh-key-path }}
