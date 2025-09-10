@@ -1,0 +1,100 @@
+name: Continuous Integration — .NET
+
+on:
+  workflow_dispatch:
+    inputs:
+      dotnet-version: 
+        description: 'Version of .NET SDK to use'
+        required: true
+        type: string
+        default: '7.0.x'
+      version_to_build:
+        description: 'Package version to build'
+        required: true
+        type: string
+        default: '1.0.0'
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - stage
+          - production
+          
+  workflow_call:
+    secrets:
+      SSH_HOST:
+        required: true
+      SSH_PORT:
+        required: true
+      SSH_USERNAME:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SSH_DESTINATION:
+        required: true
+      SSH_DEST_BACKUP:
+        required: true
+      SSH_CMD_RESTART_SERVER:
+        required: true
+
+jobs:
+  build-version:
+    uses: luciopbrito/actions/.github/workflows/dotnet-build_version.yml@v1.0.0
+    with:
+      version: ${{ inputs.version_to_build }}
+      dotnet-version: ${{ inputs.dotnet-version }}
+
+  download-artifact:
+    needs: build-version
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-version.outputs.version_built }}
+          path: api-career_${{ github.run_number }}
+
+      - name: Display structure of downloaded files
+        run: ls -R api-career_${{ github.run_number }}
+
+  save-ssh:
+    needs: download-artifact
+    uses: luciopbrito/actions/.github/workflows/ssh-save_key.yml@v1.0.0
+    secrets: inherit
+
+  deploy:
+    needs: save-ssh
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save last api build
+        run: |
+          # SSH into the remote host and check if the folder is empty
+          SSH_RESULT=$(ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "ls -A ${{secrets.SSH_DESTINATION}}")
+          
+          # Check if the SSH command output is empty (meaning folder is empty)
+          if [ -z "$SSH_RESULT" ]; then
+            echo "The folder is empty. No command will be run."
+          else
+            echo "The folder contains files. Running command..."
+            # Run your command remotely
+            ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} ${{secrets.SSH_USERNAME}}@${{secrets.SSH_HOST}} "rm -rf ${{secrets.SSH_DEST_BACKUP}}* && cp ${{secrets.SSH_DESTINATION}}* ${{secrets.SSH_DEST_BACKUP}}"
+          fi
+
+      - name: Deploy publish folder to vps
+        run: |
+          # deploy publish folder to vps
+          rsync -avz --delete -e "ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no" api-career_${{ github.run_number }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_DESTINATION }}  
+          
+      - name: Restart Web Server 
+        run: | 
+          # restart webserver
+          ssh -i ${{needs.save-ssh.outputs.ssh-key-path}} -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "${{ secrets.SSH_CMD_RESTART_SERVER }}"
+          
+  clean-up-ssh:
+    needs: [save-ssh, deploy]
+    uses: luciopbrito/actions/.github/workflows/ssh-clean_up.yml@v1.0.0
+    with:
+      ssh-key-path: ${{ needs.save-ssh.outputs.ssh-key-path }}
