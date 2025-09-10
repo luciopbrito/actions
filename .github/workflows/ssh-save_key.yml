@@ -1,4 +1,5 @@
-name: Save SSH Key
+name: Save SSH and Test Connection 
+description: 'This workflow saves an SSH private key to a specified path and tests the SSH connection using the provided credentials.'
 
 on:
   workflow_call:
