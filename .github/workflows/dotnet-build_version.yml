@@ -12,6 +12,11 @@ on:
         description: 'Dotnet version to build'
         required: true
         type: string
+      path_asdf_tool_version:
+        description: 'Whether to include .tool-versions file in the artifact, pass path to the file'
+        required: false
+        type: string
+        default: ''
 
     outputs:
       version_built:
@@ -31,11 +36,15 @@ jobs:
       - name: Display version .NET
         run: dotnet --version
 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Build publish version
         run: dotnet publish -o version-${{github.run_number}}-${{inputs.dotnet-version}}
 
       - name: Copy asdf file to publish version 
-        run: cp .tool-versions version-${{github.run_number}}-${{inputs.dotnet-version}}/
+        if: ${{ inputs.path_asdf_tool_version != '' }}
+        run: cp ${{inputs.path_asdf_tool_version}} version-${{github.run_number}}-${{inputs.dotnet-version}}/
 
       - name: Upload publish folder as artifact
         uses: actions/upload-artifact@v4
