@@ -2,26 +2,16 @@ name: Save SSH and Test Connection
 description: 'This workflow saves an SSH private key to a specified path and tests the SSH connection using the provided credentials.'
 
 on:
-  workflow_call:
-    secrets:
-      SSH_PRIVATE_KEY:
-        description: 'SSH Private Key'
-        required: true
-      SSH_HOST:
-        description: 'SSH Host'
-        required: true
-      SSH_PORT:
-        description: 'SSH Port'
-        required: true
-      SSH_USERNAME:
-        description: 'SSH Username'
-        required: true
-    
+  workflow_call:    
     inputs:
       ssh_key_path:
         description: 'Path to save the SSH key'
         required: false
         default: '/tmp/id_rsa'
+        type: string
+      environment:
+        description: 'environment to run the job in'
+        required: true
         type: string
         
     outputs:
@@ -31,6 +21,7 @@ on:
 
 jobs:
   save-ssh-key:
+    environment: ${{inputs.environment}}
     runs-on: ubuntu-latest
     steps:
     - name: Save ssh key
