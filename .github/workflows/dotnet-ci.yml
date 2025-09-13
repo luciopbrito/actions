@@ -2,21 +2,6 @@ name: Continuous Integration — .NET
 
 on:          
   workflow_call:
-    secrets:
-      SSH_HOST:
-        required: true
-      SSH_PORT:
-        required: true
-      SSH_USERNAME:
-        required: true
-      SSH_PRIVATE_KEY:
-        required: true
-      SSH_DESTINATION:
-        required: true
-      SSH_DEST_BACKUP:
-        required: true
-      SSH_CMD_RESTART_SERVER:
-        required: true
     inputs:
       dotnet_version: 
         description: 'Version of .NET SDK to use'
@@ -40,8 +25,9 @@ jobs:
 
   save-ssh:
     needs: build-version
-    uses: luciopbrito/actions/.github/workflows/ssh-save_key.yml@v1.0.0
-    secrets: inherit
+    uses: luciopbrito/actions/.github/workflows/ssh-save_key.yml@main
+    with:
+      environment: ${{ inputs.environment }}
 
   deploy:
     needs: [save-ssh, build-version]
