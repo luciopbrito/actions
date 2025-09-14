@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-version:
-    uses: luciopbrito/actions/.github/workflows/dotnet-build_version.yml@v1.0.0
+    uses: luciopbrito/actions/.github/workflows/dotnet-build_version.yml@main
     with:
       version: ${{ inputs.version_to_build }}
       dotnet-version: ${{ inputs.dotnet_version }}
