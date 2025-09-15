@@ -23,12 +23,32 @@ jobs:
       version: ${{ inputs.version_to_build }}
       dotnet-version: ${{ inputs.dotnet_version }}
 
-  save-ssh:
+  set-secrets:
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
     needs: build-version
-    uses: luciopbrito/actions/.github/workflows/ssh-save_key.yml@main
-    with:
-      environment: ${{ inputs.environment }}
+    outputs:
+      ssh_private_key: ${{ steps.export.outputs.SSH_PRIVATE_KEY }}
+      ssh_username: ${{ steps.export.outputs.SSH_USERNAME }}
+      ssh_host: ${{ steps.export.outputs.SSH_HOST }}
+      ssh_port: ${{ steps.export.outputs.SSH_PORT }}
+    steps:
+      - id: export
+        run: |
+          echo "SSH_PRIVATE_KEY=${{ secrets.SSH_PRIVATE_KEY }}" >> $GITHUB_OUTPUT
+          echo "SSH_USERNAME=${{ secrets.SSH_USERNAME }}" >> $GITHUB_OUTPUT
+          echo "SSH_HOST=${{ secrets.SSH_HOST }}" >> $GITHUB_OUTPUT
+          echo "SSH_PORT=${{ secrets.SSH_PORT }}" >> $GITHUB_OUTPUT
 
+  save-ssh:
+    needs: set-secrets
+    uses: luciopbrito/actions/.github/workflows/ssh-save_key.yml@v1.0.0
+    secrets:
+      SSH_PRIVATE_KEY: ${{ needs.set-secrets.outputs.ssh_private_key }}
+      SSH_USERNAME: ${{ needs.set-secrets.outputs.ssh_username }}
+      SSH_HOST: ${{ needs.set-secrets.outputs.ssh_host }}
+      SSH_PORT: ${{ needs.set-secrets.outputs.ssh_port }}
+    
   deploy:
     needs: [save-ssh, build-version]
     environment: ${{ inputs.environment }}
