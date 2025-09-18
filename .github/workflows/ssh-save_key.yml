@@ -21,7 +21,8 @@ on:
 
 jobs:
   save-ssh-key:
-    environment: ${{inputs.environment}}
+    environment: 
+      name: ${{inputs.environment}}
     runs-on: ubuntu-latest
     steps:
     - name: Save ssh key
