@@ -2,6 +2,9 @@ name: Angular Coverage Lcov — Dev from DevSecOps
 description: 'Configuring Angular Coverage pattern'
 author: 'Lúcio Pereira Brito'
 
+on:
+  workflow_call:
+
 jobs:
   pre:
     runs-on: 
