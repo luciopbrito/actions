@@ -13,21 +13,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: catch engine version and verify value 
+        id: engine-version
         run: |
+          echo "capture the value from package.json..."
           ENGINE_NODE="$(jq -r '.engines.node' package.json)"
           
+          echo "verifying the value..."
           if [ -z "$ENGINE_NODE" ]; then
             echo "ERROR: It is necessary to add engine on package.json"
             echo "follow instructions: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines"
             exit 1
           fi
 
+          echo "removing the v character..."
           ENGINE_NODE="${ENGINE_NODE#v}"
-
-      - name: set up engine to github output
-        id: engine-version
-        run: echo "ENGINE_NODE=$ENGINE_NODE" >> $GITHUB_OUTPUT
-  
+          
+          echo "set up engine to github output..."
+          echo "ENGINE_NODE=$ENGINE_NODE" >> $GITHUB_OUTPUT
   angular-coverage:
     needs: pre
     runs-on:
