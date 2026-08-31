@@ -12,8 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: install the jq - Command-line JSON processor
-        run: brew install jq
       - name: catch engine version and verify value 
         run: |
           ENGINE_NODE="$(jq -r '.engines.node' package.json)"
