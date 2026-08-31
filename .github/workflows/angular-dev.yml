@@ -45,7 +45,7 @@ jobs:
     
       - name: configure-coverage
         run: |
-          npx ng test --watch false --browsers ChromeHeadless --coverage --coverage-reporters lcov
+          npx ng test --watch false --coverage --coverage-reporters lcov
     
       - name: get lcov file path
         id: lcov-path
