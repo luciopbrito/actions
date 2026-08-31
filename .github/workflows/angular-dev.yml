@@ -1,7 +1,5 @@
 name: Angular Coverage Lcov — Dev from DevSecOps
 description: 'Configuring Angular Coverage pattern'
-author: 'Lúcio Pereira Brito'
-
 on:
   workflow_call:
 
@@ -10,25 +8,25 @@ jobs:
     runs-on: 
       - macos-latest
     outputs:
-      engine:  
-        description: 'it represents the engine.node value from package.json'
-        value: ${{steps.engine-version.ENGINE_NODE}}
-    step:
+      engine: ${{steps.engine-version.outputs.ENGINE_NODE}} # it represents the engine.node value from package.json
+    steps:
       - uses: actions/checkout@v4
 
       - name: catch engine version and verify value 
         run: |
           ENGINE_NODE="$(jq -r '.engines.node' package.json)"
-          if [ -n ENGINE_NODE ] then
-            echo "ERROR: It is necessary to add engine on package.json \n follow instructions: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines"
+          
+          if [ -n "$ENGINE_NODE" ] then
+            echo "ERROR: It is necessary to add engine on package.json"
+            echo "follow instructions: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines"
             exit 1
           fi
 
-          ENGINE_NODE=$(ENGINE_NODE | tr -d 'v')
-      
+          ENGINE_NODE="${ENGINE_NODE#v}"
+
       - name: set up engine to github output
         id: engine-version
-        run: echo ENGINE_NODE >> $GITHUB_OUTPUT
+        run: echo "ENGINE_NODE=$ENGINE_NODE" >> $GITHUB_OUTPUT
   
   angular-coverage:
     needs: pre
@@ -38,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
     
       - name: install-node
-        uses: setup-node@v7
+        uses: actions/setup-node@v7
         with:
           node-version: ${{needs.pre.outputs.engine}}
     
@@ -53,12 +51,14 @@ jobs:
         id: lcov-path
         run: |
           LCOV_PATH="$(find coverage -type f -name lcov.info)"
-          if [ -n LCOV_PATH ] then
-            echo "ERROR: the coverage folder is missing \n follow instructions https://angular.dev/guide/testing/code-coverage"
+          
+          if [ -n "$LCOV_PATH" ] then
+            echo "ERROR: the coverage folder is missing""
+            echo "follow instructions https://angular.dev/guide/testing/code-coverage"
             exit 1
           fi
 
-          echo LCOV_PATH >> $GITHUB_OUTPUT
+          echo "LCOV_PATH=$LCOV_PATH" >> $GITHUB_OUTPUT
      
       - name: save-lcov
         uses: actions/upload-artifact@v4
