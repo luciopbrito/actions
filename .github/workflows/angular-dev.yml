@@ -53,7 +53,7 @@ jobs:
           LCOV_PATH="$(find coverage -type f -name lcov.info)"
           
           if [ -z "$LCOV_PATH" ]; then
-            echo "ERROR: the coverage folder is missing""
+            echo "ERROR: the coverage folder is missing"
             echo "follow instructions https://angular.dev/guide/testing/code-coverage"
             exit 1
           fi
