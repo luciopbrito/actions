@@ -16,7 +16,7 @@ jobs:
         run: |
           ENGINE_NODE="$(jq -r '.engines.node' package.json)"
           
-          if [ -n "$ENGINE_NODE" ] then
+          if [ -n "$ENGINE_NODE" ]; then
             echo "ERROR: It is necessary to add engine on package.json"
             echo "follow instructions: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines"
             exit 1
@@ -52,7 +52,7 @@ jobs:
         run: |
           LCOV_PATH="$(find coverage -type f -name lcov.info)"
           
-          if [ -n "$LCOV_PATH" ] then
+          if [ -n "$LCOV_PATH" ]; then
             echo "ERROR: the coverage folder is missing""
             echo "follow instructions https://angular.dev/guide/testing/code-coverage"
             exit 1
