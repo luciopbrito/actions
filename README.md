@@ -16,6 +16,10 @@ I will save actions that I use frequently in my repositories.
 
   - [Build version](#net-build-version)
 
+- Angular
+
+  - [Code Coverage](#angular-code-coverage)
+
 ### Save SSH Key Action
 
 This action saves an SSH key in the `/tmp/id_rsa` path of the current runner and tests the connection before it.
@@ -63,3 +67,47 @@ It is necessary to set up the path that contains the solution file, and the `.to
 #### .NET build version — Outputs
 
 - `version_built` — version that will be build.
+
+## Angular Code Coverage
+
+### Goal
+
+It tests an Angular project and generates an lcov file.
+
+### How to use the Angular Code Coverage Action
+
+## Pre requirements
+
+1. Set up engine on `package.json`
+
+    It is necessary to define the node version on `package.json`. Follow the instruction below.
+
+    <https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines>
+
+    **Note: It must use only one version in the node property (e.g, "node": "v25.6.1")**
+
+2. Install the necessary package for coverage.
+
+    For newest Angular version — e.g, 21.x.x — you can install by command below.
+
+    ```sh
+    npm i -D @vitest/coverage-v8
+    ```
+
+    For more information, search for **Angular coverage version...**
+
+## Example of usage
+
+```yml
+name: 'DevSecOps to actions-angular'
+run-name: 'DevSecOps to actions-angular'
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  dev:
+    uses: luciopbrito/actions/.github/workflows/angular-dev.yml@feat/angular-dev
+```
+
+The example above, it defines a **dev** job with an **uses statement** with the Angular Code Coverage.
