@@ -1,0 +1,69 @@
+name: Angular Coverage Lcov — Dev from DevSecOps
+description: 'Configuring Angular Coverage pattern'
+on:
+  workflow_call:
+
+jobs:
+  pre:
+    runs-on: 
+      - macos-latest
+    outputs:
+      engine: ${{steps.engine-version.outputs.ENGINE_NODE}} # it represents the engine.node value from package.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: catch engine version and verify value 
+        id: engine-version
+        run: |
+          echo "capture the value from package.json..."
+          ENGINE_NODE="$(jq -r '.engines.node' package.json)"
+          
+          echo "verifying the value..."
+          if [ -z "$ENGINE_NODE" ]; then
+            echo "ERROR: It is necessary to add engine on package.json"
+            echo "follow instructions: https://docs.npmjs.com/cli/v11/configuring-npm/package-json#engines"
+            exit 1
+          fi
+
+          echo "removing the v character..."
+          ENGINE_NODE="${ENGINE_NODE#v}"
+          
+          echo "set up engine to github output..."
+          echo "ENGINE_NODE=$ENGINE_NODE" >> $GITHUB_OUTPUT
+  angular-coverage:
+    needs: pre
+    runs-on:
+      - macos-latest
+    steps:
+      - uses: actions/checkout@v4
+    
+      - name: install-node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{needs.pre.outputs.engine}}
+    
+      - name: install-dependencies
+        run: npm ci     
+    
+      - name: configure-coverage
+        run: |
+          npx ng test --watch false --coverage --coverage-reporters lcov
+    
+      - name: get lcov file path
+        id: lcov-path
+        run: |
+          LCOV_PATH="$(find coverage -type f -name lcov.info)"
+          
+          if [ -z "$LCOV_PATH" ]; then
+            echo "ERROR: the coverage folder is missing"
+            echo "follow instructions https://angular.dev/guide/testing/code-coverage"
+            exit 1
+          fi
+
+          echo "LCOV_PATH=$LCOV_PATH" >> $GITHUB_OUTPUT
+     
+      - name: save-lcov
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov-file-from-angular-test-coverage
+          path: ${{steps.lcov-path.outputs.LCOV_PATH}}
